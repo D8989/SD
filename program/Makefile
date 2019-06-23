@@ -1,2 +1,2 @@
 all:
-	gcc program.c conection/conection.c log/log.c -o prog
+	gcc program.c conection/conection.c log/log.c -lpthread -o prog

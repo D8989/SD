@@ -24,10 +24,18 @@ just one host and as a receiver on all the other hosts
 #include "conection/conection.h"
 #include "log/log.h"
 
+#include <pthread.h>
+
 #define EXAMPLE_PORT 6000
 #define EXAMPLE_GROUP "239.0.0.1"
 #define MAX_MSG_SIZE 60
 #define MAX_NAME_SIZE 50
+
+int time_global = 0; 
+
+void setTime(int n);
+int getTime();
+void* incrementTime(void* v);
 
 int main(int argc, char* argv[])
 {
@@ -44,7 +52,10 @@ int main(int argc, char* argv[])
    strcat(arqPath, ".txt");
    printf("%s\n", arqPath);
    char msgAux[MAX_MSG_SIZE];
+   pthread_t thread;
 
+   setTime(timeLocal);
+   pthread_create(&thread, NULL, incrementTime, NULL); // inicio da conta do tempo
    struct sockaddr_in addr;
    int sock, cnt;
    struct ip_mreqn mreq;
@@ -64,13 +75,13 @@ int main(int argc, char* argv[])
          sprintf(message, "time is %-24.24s", ctime(&t));
          printf("sending: %s\n", message);
          concat(msgAux, MAX_MSG_SIZE,"Preparando para mandar a msg: ", message);
-         escrever(arqPath, id, timeLocal, msgAux);
-         timeLocal++;
+         escrever(arqPath, id, getTime(), msgAux);
+         //timeLocal++;
          mandar(message, sizeof(message), sock, addr);
          concat(msgAux, MAX_MSG_SIZE,"mensagem enviada enviado: ", message);
-         escrever(arqPath, id, timeLocal, msgAux);
-         timeLocal++;
-         sleep(3);
+         escrever(arqPath, id, getTime(), msgAux);
+         //timeLocal++;
+         sleep(4);
          ++i;
       }
       closeSocket(sock);
@@ -82,12 +93,12 @@ int main(int argc, char* argv[])
       while (i < 5)
       {
          char *m = (char *)malloc(MAX_MSG_SIZE);
-         escrever(arqPath, id, timeLocal, "Escutando...");
-         timeLocal++;
+         escrever(arqPath, id, getTime(), "Escutando...");
+         //timeLocal++;
          escutar(sock, &addr, m, MAX_MSG_SIZE);
          concat(msgAux, MAX_MSG_SIZE, "mensagem recebida: ", m);
-         escrever(arqPath, id, timeLocal, msgAux);
-         timeLocal++;
+         escrever(arqPath, id, getTime(), msgAux);
+         //timeLocal++;
          printf("%s: message = \"%s\"\n", inet_ntoa(addr.sin_addr), m);
          free(m);
          ++i;
@@ -95,5 +106,26 @@ int main(int argc, char* argv[])
       closeSocket(sock);
    }
 
+   setTime(9999999);
+   pthread_exit(NULL);
    return 0;
+}
+
+void setTime(int n)
+{
+   time_global = n;
+}
+
+int getTime()
+{
+   int n = time_global;
+   return n;
+}
+
+void* incrementTime(void* v)
+{
+   while(time_global < 9999999){
+      time_global = time_global + 1;
+      sleep(1);
+   }
 }
