@@ -22,15 +22,109 @@ just one host and as a receiver on all the other hosts
 
 #define EXAMPLE_PORT 6000
 #define EXAMPLE_GROUP "239.0.0.1"
+#define MAX_MSG_SIZE 50
+
+void mandar(const char *msg, unsigned long size, int sock, struct sockaddr_in addr)
+{
+   int cnt;
+   cnt = sendto(sock, msg, size, 0,
+                (struct sockaddr *)&addr, sizeof(addr));
+   if (cnt < 0)
+   {
+      perror("sendto");
+      exit(1);
+   }
+}
+
+void escutar(int sock, struct sockaddr_in *addr, char *msg, unsigned long size)
+{
+   // char* msg = (char*)malloc(size);
+   int cnt;
+   int addrlen = sizeof(*addr);
+   cnt = recvfrom(sock, msg, size, 0,
+                  (struct sockaddr *)addr, &addrlen);
+   if (cnt < 0)
+   {
+      perror("recvfrom");
+      exit(1);
+   }
+   else if (cnt == 0)
+   {
+      strcpy(msg, "mensagem vazia.");
+   }
+}
+
+int startSocket()
+{
+   /* set up socket */
+   int sock = -1;
+   sock = socket(AF_INET, SOCK_DGRAM, 0);
+   if (sock < 0)
+   {
+      perror("socket");
+      exit(1);
+   }
+   return sock;
+}
+
+void initSocketAddr(struct sockaddr_in *addr, const int port)
+{
+   bzero((char *)addr, sizeof(addr));
+   addr->sin_family = AF_INET;
+   addr->sin_addr.s_addr = htonl(INADDR_ANY);
+   addr->sin_port = htons(port);
+}
+
+void configureToSend(struct sockaddr_in *addr, const char *group)
+{
+   addr->sin_addr.s_addr = inet_addr(group);
+}
+
+void configureToListen(int sock, struct sockaddr_in *addr, struct ip_mreqn *mreq, const char *group)
+{
+   // allow multiple sockets to use the same PORT number
+   // https://gist.github.com/hostilefork/f7cae3dc33e7416f2dd25a402857b6c6#file-listener-c-L63
+
+   u_int yes = 1;
+   if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&yes, sizeof(yes)) < 0)
+   {
+      perror("Reusing ADDR failed");
+      exit(1);
+   }
+   //------------------------------------------------------------
+
+   if (bind(sock, (struct sockaddr *)addr, sizeof(*addr)) < 0)
+   {
+      perror("bind");
+      exit(1);
+   }
+   mreq->imr_multiaddr.s_addr = inet_addr(group);
+   //mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+   mreq->imr_ifindex = 0;
+   if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+                  mreq, sizeof(*mreq)) < 0)
+   {
+      perror("setsockopt mreq");
+      exit(1);
+   }
+}
+
+void closeSocket(int sock)
+{
+}
 
 int main(int argc)
 {
    struct sockaddr_in addr;
    int addrlen, sock, cnt;
    struct ip_mreqn mreq;
-   char message[50];
+   char message[MAX_MSG_SIZE];
 
-   /* set up socket */
+   sock = startSocket();
+   initSocketAddr(&addr, EXAMPLE_PORT);
+   addrlen = sizeof(addr);
+   /* 
+   // set up socket 
    sock = socket(AF_INET, SOCK_DGRAM, 0);
    if (sock < 0)
    {
@@ -42,16 +136,21 @@ int main(int argc)
    addr.sin_addr.s_addr = htonl(INADDR_ANY);
    addr.sin_port = htons(EXAMPLE_PORT);
    addrlen = sizeof(addr);
-
+*/
    if (argc > 1)
    {
       /* send */
-      addr.sin_addr.s_addr = inet_addr(EXAMPLE_GROUP);
+      //addr.sin_addr.s_addr = inet_addr(EXAMPLE_GROUP);
+      configureToSend(&addr, EXAMPLE_GROUP);
       while (1)
       {
          time_t t = time(0);
          sprintf(message, "time is %-24.24s", ctime(&t));
          printf("sending: %s\n", message);
+         // printf("\tmessage = %s\n", message);
+         // printf("\tsizof(message) = %ld\n", sizeof(message));
+         mandar(message, sizeof(message), sock, addr);
+         /* 
          cnt = sendto(sock, message, sizeof(message), 0,
                       (struct sockaddr *)&addr, addrlen);
          if (cnt < 0)
@@ -59,6 +158,7 @@ int main(int argc)
             perror("sendto");
             exit(1);
          }
+         */
          sleep(5);
       }
    }
@@ -68,15 +168,14 @@ int main(int argc)
       /* receive */
       // allow multiple sockets to use the same PORT number
       // https://gist.github.com/hostilefork/f7cae3dc33e7416f2dd25a402857b6c6#file-listener-c-L63
+      /*
       u_int yes = 1;
-      if (
-          setsockopt(
-              sock, SOL_SOCKET, SO_REUSEADDR, (char *)&yes, sizeof(yes)) < 0)
+      if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&yes, sizeof(yes)) < 0)
       {
          perror("Reusing ADDR failed");
          return 1;
       }
-
+      //------------------------------------------------------------
       if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
       {
          perror("bind");
@@ -91,8 +190,12 @@ int main(int argc)
          perror("setsockopt mreq");
          exit(1);
       }
+      */
+      configureToListen(sock, &addr, &mreq, EXAMPLE_GROUP);
       while (1)
       {
+         char *m = (char *)malloc(MAX_MSG_SIZE);
+         /*
          cnt = recvfrom(sock, message, sizeof(message), 0,
                         (struct sockaddr *)&addr, &addrlen);
          if (cnt < 0)
@@ -104,7 +207,10 @@ int main(int argc)
          {
             break;
          }
-         printf("%s: message = \"%s\"\n", inet_ntoa(addr.sin_addr), message);
+         */
+         escutar(sock, &addr, m, MAX_MSG_SIZE);
+         printf("%s: message = \"%s\"\n", inet_ntoa(addr.sin_addr), m);
+         free(m);
       }
    }
 }
