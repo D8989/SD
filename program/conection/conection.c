@@ -1,4 +1,5 @@
 #include "conection.h"
+#include "../log/log.h"
 
 void mandar(const char *msg, unsigned long size, int sock, struct sockaddr_in addr)
 {
@@ -18,12 +19,14 @@ void escutar(int sock, struct sockaddr_in *addr, char *msg, unsigned long size)
    int addrlen = sizeof(*addr);
    cnt = recvfrom(sock, msg, size, 0,
                   (struct sockaddr *)addr, &addrlen);
+   /*  
    if (cnt < 0)
    {
       perror("recvfrom");
       exit(1);
    }
-   else if (cnt == 0)
+   */
+   if (cnt == 0)
    {
       strcpy(msg, "mensagem vazia.");
    }
@@ -68,11 +71,23 @@ void configureToListen(int sock, struct sockaddr_in *addr, struct ip_mreqn *mreq
    }
    //------------------------------------------------------------
 
+
+   // set time limit
+   struct timeval timeout;
+   timeout.tv_sec = 10;
+   timeout.tv_usec = 0;
+   if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+   {
+      perror("setsockopt failed\n");
+   }
+
    if (bind(sock, (struct sockaddr *)addr, sizeof(*addr)) < 0)
    {
+      printf("TESTE2");
       perror("bind");
       exit(1);
    }
+
    mreq->imr_multiaddr.s_addr = inet_addr(group);
    //mreq.imr_interface.s_addr = htonl(INADDR_ANY);
    mreq->imr_ifindex = 0;
@@ -84,7 +99,18 @@ void configureToListen(int sock, struct sockaddr_in *addr, struct ip_mreqn *mreq
    }
 }
 
-void closeSocket(int sock)
+void closeSocket(int *sock)
 {
-   close(sock);
+   close(*sock);
+   *sock = 0;
+}
+
+void sendApresentacao(int id, int sock, struct sockaddr_in addr)
+{
+   int size = sizeof(APRESENTACAO) + sizeof(id);
+   char msg[size];
+   char number[12];
+   sprintf(number, "%d", id);
+   concat(msg, size, APRESENTACAO, number);
+   mandar(msg, size, sock, addr);
 }
