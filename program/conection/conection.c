@@ -133,3 +133,13 @@ void sendLider(int id, int sock, struct sockaddr_in addr)
    concat(msg, size, LIDER, number);
    mandar(msg, size, sock, addr);
 }
+
+void sendBerkley(int id, int sock, struct sockaddr_in addr)
+{
+   int size = sizeof(BECLEY) + sizeof(id);
+   char msg[size];
+   char number[12];
+   sprintf(number, "%d", id);
+   concat(msg, size, BECLEY, number);
+   mandar(msg, size, sock, addr);
+}

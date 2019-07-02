@@ -29,5 +29,6 @@ void closeSocket(int *sock);
 void sendApresentacao(int id, int sock, struct sockaddr_in addr);
 void sendEleicao(int id, int sock, struct sockaddr_in addr);
 void sendLider(int id, int sock, struct sockaddr_in addr);
+void sendBerkley(int id, int sock, struct sockaddr_in addr);
 
 #endif
