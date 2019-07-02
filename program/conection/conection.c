@@ -74,7 +74,7 @@ void configureToListen(int sock, struct sockaddr_in *addr, struct ip_mreqn *mreq
 
    // set time limit
    struct timeval timeout;
-   timeout.tv_sec = 10;
+   timeout.tv_sec = 7; // tempo de espera
    timeout.tv_usec = 0;
    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
    {
@@ -111,5 +111,25 @@ void sendApresentacao(int id, int sock, struct sockaddr_in addr)
    char number[12];
    sprintf(number, "%d", id);
    concat(msg, size, APRESENTACAO, number);
+   mandar(msg, size, sock, addr);
+}
+
+void sendEleicao(int id, int sock, struct sockaddr_in addr)
+{
+   int size = sizeof(BULLY) + sizeof(id);
+   char msg[size];
+   char number[12];
+   sprintf(number, "%d", id);
+   concat(msg, size, BULLY, number);
+   mandar(msg, size, sock, addr);
+}
+
+void sendLider(int id, int sock, struct sockaddr_in addr)
+{
+   int size = sizeof(LIDER) + sizeof(id);
+   char msg[size];
+   char number[12];
+   sprintf(number, "%d", id);
+   concat(msg, size, LIDER, number);
    mandar(msg, size, sock, addr);
 }

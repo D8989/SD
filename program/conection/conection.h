@@ -14,9 +14,9 @@
 #define APRESENTACAO "A"
 #define BULLY "B"
 #define BECLEY "C"
+#define LIDER "L"
 #define OK "K"
 #define END "E"
-
 
 void mandar(const char *msg, unsigned long size, int sock, struct sockaddr_in addr);
 void escutar(int sock, struct sockaddr_in *addr, char *msg, unsigned long size);
@@ -24,8 +24,10 @@ int startSocket();
 void initSocketAddr(struct sockaddr_in *addr, const int port);
 void configureToSend(struct sockaddr_in *addr, const char *group);
 void configureToListen(int sock, struct sockaddr_in *addr, struct ip_mreqn *mreq, const char *group);
-void closeSocket(int* sock);
+void closeSocket(int *sock);
 
 void sendApresentacao(int id, int sock, struct sockaddr_in addr);
+void sendEleicao(int id, int sock, struct sockaddr_in addr);
+void sendLider(int id, int sock, struct sockaddr_in addr);
 
 #endif

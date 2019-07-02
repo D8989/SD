@@ -42,15 +42,27 @@ int main(int argc, char *argv[])
 {
     if (argc < 4)
     {
-        printf("$ ./prog 'id' 'time' 'start'[1-send, 0-listen]\n");
+        printf("$ ./prog 'id' 'time' 'eleicao'[1-send, 0-listen]\n");
         return 1;
     }
 
-    int start = atoi(argv[3]);
+    int eleicao = atoi(argv[3]);
     int timeLocal = atoi(argv[2]);
     int id = atoi(argv[1]);
     int running = 1;
-    int welcome = 1;
+    // int welcome = 1;  // inicia a apresentacao
+    int vitoria = 0; // bool que controla a mensagem de vitoria da eleicao.
+    int lider = 0;    // booleano para controlar o algoritmo do bully
+    int idLider = -1; // quarda o id do lider do SD
+    
+    if(eleicao){ // nescessário para o caso do maior processo começar a eleicao.
+        lider = 1;
+    }
+    else {
+        lider = 0;
+    }
+
+
     char arqPath[MAX_NAME_SIZE] = "saida/processo_";
     strcat(arqPath, argv[1]);
     strcat(arqPath, ".txt");
@@ -74,17 +86,33 @@ int main(int argc, char *argv[])
 
     while (running)
     {
-        printf("\t\tWelcome = %d\n", welcome);
+        /* 
         if (welcome)
         {
             configureToSend(&addr, EXAMPLE_GROUP);
             sendApresentacao(id, sock, addr);
             printf("mensagem de apresentacao enviada\n");
         }
+        else 
+        */
+        if (eleicao)
+        {
+            configureToSend(&addr, EXAMPLE_GROUP); // não entendo a nescessidade desta linha...
+            sendEleicao(id, sock, addr);
+            printf("mensagem de eleicao enviada\n");
+        }
 
+        if (vitoria)
+        {
+            configureToSend(&addr, EXAMPLE_GROUP); // não entendo a nescessidade desta linha...
+            sendLider(id, sock, addr);
+            printf("mensagem de vitoria enviada.\n");
+            vitoria = 0;
+        }
         printf("escutando...\n");
         escutar(sock, &addr, msgAux, MAX_MSG_SIZE);
         char aux[2] = {msgAux[0]};
+        /* 
         if (strcmp(APRESENTACAO, aux) == 0)
         {
             printf("\tENTROU NA APRESENTACAO.\n");
@@ -104,6 +132,41 @@ int main(int argc, char *argv[])
             bzero(msgAux, sizeof(msgAux));
             printAllProcess(id, &process);
         }
+        else 
+        */
+        if (strcmp(BULLY, aux) == 0)
+        {
+            printf("\tENTROU NA ELEICAO.\n");
+            printf("msgAux=%s\n", msgAux);
+            int a = atoi(&msgAux[1]);
+            printf("a=%d\n", a);
+
+            if (id > a)
+            {
+                eleicao = 1; // vai comecar uma nova eleicao.
+                lider = 1;
+            }
+            else if (id < a)
+            {
+                eleicao = 0;
+                lider = 0;
+            }
+            else
+            {
+                eleicao = 0; // pro processo não comecar a eleicao da propria chamada
+            }
+        }
+        else if (strcmp(LIDER, aux) == 0)
+        {
+            printf("\tENTROU NA CONCLUSAO DA ELEICAO.\n");
+            printf("msgAux=%s\n", msgAux);
+            int a = atoi(&msgAux[1]);
+            printf("a=%d\n", a);
+            idLider = a;
+            lider = 0;
+            eleicao = 0;
+            printf("\tProcesso %d é o lider do SD.\n", idLider);
+        }
         else if (strcmp(END, aux) == 0)
         {
             printf("MENSAGEM <%s> INVALIDA.\n", msgAux);
@@ -111,12 +174,19 @@ int main(int argc, char *argv[])
         }
         else
         {
-            printf("tempo estourado. escutando novamente.\n");
-            printAllProcess(id, &process);
+            printf("tempo estourado.\n");
+            if(lider){
+                
+                vitoria = 1;
+                lider = 0; // para não comecar uma nova eleicao.
+                
+            }
+            // printAllProcess(id, &process);
         }
+        bzero(msgAux, sizeof(msgAux)); // apaga a mensagem
     }
 
-    printAllProcess(id, &process);
+    // printAllProcess(id, &process);
     /*
     if (start == 1)
     {
