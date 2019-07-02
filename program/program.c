@@ -33,6 +33,8 @@ just one host and as a receiver on all the other hosts
 #define MAX_NAME_SIZE 50
 
 int time_global = 0;
+int stop = 1; // tempo que o relogio vai para
+int boolStop = 0; // bool para controlar o atraso do tempo
 
 void setTime(int n);
 int getTime();
@@ -348,51 +350,6 @@ int main(int argc, char *argv[])
         bzero(msgAux, sizeof(msgAux)); // apaga a mensagem
     }
 
-    // printAllProcess(id, &process);
-    /*
-    if (start == 1)
-    {
-        // send
-        configureToSend(&addr, EXAMPLE_GROUP);
-        int i = 0;
-        while (i < 5)
-        {
-            time_t t = time(0);
-            sprintf(message, "time is %-24.24s", ctime(&t));
-            printf("sending: %s\n", message);
-            concat(msgAux, MAX_MSG_SIZE, "Preparando para mandar a msg: ", message);
-            escrever(arqPath, id, getTime(), msgAux);
-            //timeLocal++;
-            mandar(message, sizeof(message), sock, addr);
-            concat(msgAux, MAX_MSG_SIZE, "mensagem enviada enviado: ", message);
-            escrever(arqPath, id, getTime(), msgAux);
-            //timeLocal++;
-            sleep(4);
-            ++i;
-        }
-        closeSocket(sock);
-    }
-    else
-    {
-        configureToListen(sock, &addr, &mreq, EXAMPLE_GROUP);
-        int i = 0;
-        while (i < 5)
-        {
-            char *m = (char *)malloc(MAX_MSG_SIZE);
-            escrever(arqPath, id, getTime(), "Escutando...");
-            //timeLocal++;
-            escutar(sock, &addr, m, MAX_MSG_SIZE);
-            concat(msgAux, MAX_MSG_SIZE, "mensagem recebida: ", m);
-            escrever(arqPath, id, getTime(), msgAux);
-            //timeLocal++;
-            printf("%s: message = \"%s\"\n", inet_ntoa(addr.sin_addr), m);
-            free(m);
-            ++i;
-        }
-        closeSocket(sock);
-    }
-*/
-
     closeSocket(&sock);
     setTime(9999999);
     pthread_exit(NULL);
@@ -401,7 +358,15 @@ int main(int argc, char *argv[])
 
 void setTime(int n)
 {
-    time_global = n;
+    int atual = getTime();
+    if( n >= atual){
+        time_global = n;
+    } 
+    else {
+        if( n < 0) n *= -1;
+        stop = n;
+        boolStop = 1;
+    }
 }
 
 int getTime()
@@ -415,6 +380,12 @@ void *incrementTime(void *v)
     while (time_global < 9999999)
     {
         time_global = time_global + 1;
-        sleep(1);
+        if( boolStop ){
+            sleep(stop);
+            boolStop = 0;
+        }
+        else {
+            sleep(1);
+        }
     }
 }
