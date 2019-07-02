@@ -28,13 +28,13 @@ void configureToSend(struct sockaddr_in *addr, const char *group);
 void configureToListen(int sock, struct sockaddr_in *addr, struct ip_mreqn *mreq, const char *group);
 void closeSocket(int *sock);
 
-void sendApresentacao(int id, int sock, struct sockaddr_in addr);
-void sendEleicao(int id, int sock, struct sockaddr_in addr);
-void sendLider(int id, int sock, struct sockaddr_in addr);
-void sendBerkley(int sock, struct sockaddr_in addr);
-void sendTime(int id, int time, int sock, struct sockaddr_in addr);
-void sendNewTime(int id, int time, int sock, struct sockaddr_in addr);
-void sendEnd(int sock, struct sockaddr_in addr);
+void sendApresentacao(int id, int sock, struct sockaddr_in addr, char* aux);
+void sendEleicao(int id, int sock, struct sockaddr_in addr, char* aux);
+void sendLider(int id, int sock, struct sockaddr_in addr, char* aux);
+void sendBerkley(int sock, struct sockaddr_in addr, char* aux);
+void sendTime(int id, int time, int sock, struct sockaddr_in addr, char* aux);
+void sendNewTime(int id, int time, int sock, struct sockaddr_in addr, char* aux);
+void sendEnd(int sock, struct sockaddr_in addr, char* aux);
 
 int nextNumber(char* msg); // retorna a posicao do segundo numero da mensagem TIME
 
