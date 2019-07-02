@@ -56,6 +56,12 @@ int main(int argc, char *argv[])
     int lider = 0;      // booleano para controlar o algoritmo do bully
     int idLider = -1;   // quarda o id do lider do SD
     int berkleyAux = 1; // bool auxiliar para começar o algoritmo de berkley.
+    int sendTimeAux = 0; // bool para controlar o envio do seu relogio para o lider.
+    int count = 0; // conta quandos processos mandou o seu tempo
+    double media = 0; // media do tempo de berkeley
+    int newTime = 0; // bool que controla o envio de mensagens de atualizaçao do tempo
+    int end = 0; // bool que controla o final do algoritmo
+    int sEnd = 0; // bool que envia a menssagem de fim
     if (eleicao)
     { // nescessário para o caso do maior processo começar a eleicao.
         lider = 1;
@@ -77,8 +83,10 @@ int main(int argc, char *argv[])
     setTime(timeLocal);
     pthread_create(&thread, NULL, incrementTime, NULL); // inicio da conta do tempo
     struct sockaddr_in addr;
+    bzero((char*)&addr, sizeof(addr));
     int sock, cnt;
     struct ip_mreqn mreq;
+    bzero((char*)&mreq, sizeof(mreq));
     char message[MAX_MSG_SIZE];
 
     sock = startSocket();
@@ -88,7 +96,6 @@ int main(int argc, char *argv[])
 
     while (running)
     {
-        
         if (welcome)
         {
             configureToSend(&addr, EXAMPLE_GROUP);
@@ -114,9 +121,53 @@ int main(int argc, char *argv[])
         if (berkleyAux && idLider == id)
         {
             configureToSend(&addr, EXAMPLE_GROUP); // não entendo a nescessidade desta linha...
-            sendBerkley(id, sock, addr);
+            sendBerkley(sock, addr);
             printf("mensagem de Berkley enviada.\n");
             berkleyAux = 0; // evita comecar o algoritmo de novo.
+        }
+
+        if(sendTimeAux)
+        {
+            configureToSend(&addr, EXAMPLE_GROUP); // não entendo a nescessidade desta linha...
+            sendTime(id, getTime(), sock, addr);
+            printf("mensagem de tempo enviada.\n");
+            sendTimeAux = 0; // evitar mandar a mesma mensagem varias vezes.
+        }
+
+        if(sEnd)
+        {
+            configureToSend(&addr, EXAMPLE_GROUP); // não entendo a nescessidade desta linha...
+            sendEnd(sock, addr);
+            printf("menssagem de fechamento enviada.\n");
+        }
+
+        if(newTime)
+        {
+            int i = 0;
+            double newT; // novo tempo;
+            while(i < process.i){
+                
+                newT = 0;
+                if( media >= process.time[i]){
+                    newT = media + abs(process.time[i]);
+                }
+                else{
+                    newT = media - abs(process.time[i]);
+                }
+                configureToSend(&addr, EXAMPLE_GROUP); // não entendo a nescessidade desta linha...
+                sendNewTime(process.process[i], newT, sock, addr);
+                ++i;
+            }
+            newT = 0;
+            if( media >= process.myTime){
+                newT = media + abs(process.myTime);
+            }
+            else{
+                newT = media - abs(process.myTime);
+            }
+            configureToSend(&addr, EXAMPLE_GROUP); // não entendo a nescessidade desta linha...
+            sendNewTime(id, newT, sock, addr);
+            ++i;
         }
 
         printf("escutando...\n");
@@ -165,7 +216,8 @@ int main(int argc, char *argv[])
                 eleicao = 0; // pro processo não comecar a eleicao da propria chamada
             }
         }
-        else if (strcmp(LIDER, aux) == 0)
+        else 
+        if (strcmp(LIDER, aux) == 0)
         {
             printf("\tENTROU NA CONCLUSAO DA ELEICAO.\n");
             printf("msgAux=%s\n", msgAux);
@@ -176,16 +228,53 @@ int main(int argc, char *argv[])
             eleicao = 0;
             printf("\tProcesso %d é o lider do SD.\n", idLider);
         }
-        else if (strcmp(BECLEY, aux) == 0)
+        else 
+        if (strcmp(BECLEY, aux) == 0)
         {
             printf("\tENTROU NO ALGORITMO DE BERKELEY.\n");
             printf("msgAux=%s\n", msgAux);
-            int a = atoi(&msgAux[1]);
-            printf("a=%d\n", a);
+            sendTimeAux = 1;
         }
-        else if (strcmp(END, aux) == 0)
+        else
+        if (strcmp(TIME, aux) == 0)
         {
-            printf("MENSAGEM <%s> INVALIDA.\n", msgAux);
+            if( id == idLider){ // Apenas o lider recebe esta mensagem.
+                printf("\tENTROU NO CALCULO DO TEMPO.\n");
+                int p_id = atoi(&msgAux[1]);
+                int i = nextNumber(msgAux);
+                int p_time = atoi(&msgAux[i]);
+                printf("p_id=%d; p_time=%d\n", p_id,p_time);
+                addTime(p_id, p_time, &process);
+                ++count;
+                if( process.i+1 == count) // já leu o tempo de todos os processos
+                {
+                    media = mediaTempo(&process);
+                    printf("media = %lf\n", media);
+                    newTime = 1; // seta para mandar as mensagens de uodate de tempo.
+                }
+            }
+        }
+        
+        else
+        if (strcmp(NEW_TIME, aux) == 0)
+        {
+            printf("\tENTROU NO UPDATE DO TEMPO.\n");
+            int p_id = atoi(&msgAux[1]);
+            int i = nextNumber(msgAux);
+            int p_time = atoi(&msgAux[i]);
+            printf("p_id=%d; p_time=%d\n", p_id,p_time);
+            if(p_id == id){
+                setTime(p_time);
+                newTime = 0;
+                end = 1;
+            }
+        }
+        
+        else 
+        if (strcmp(END, aux) == 0)
+        {
+            printf("\tENTROU NO FIM DO ALGORITMO.\n");
+            printf("msgAux=%s\n", msgAux);
             running = 0;
         }
         else
@@ -201,6 +290,9 @@ int main(int argc, char *argv[])
                 lider = 0; // para não comecar uma nova eleicao.
             }
 
+            if(id == idLider && end == 1){
+                sEnd = 1;
+            }
             
             printAllProcess(id, &process);
         }

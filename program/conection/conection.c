@@ -134,12 +134,63 @@ void sendLider(int id, int sock, struct sockaddr_in addr)
    mandar(msg, size, sock, addr);
 }
 
-void sendBerkley(int id, int sock, struct sockaddr_in addr)
+void sendBerkley(int sock, struct sockaddr_in addr)
 {
-   int size = sizeof(BECLEY) + sizeof(id);
+   int size = sizeof(BECLEY);
    char msg[size];
-   char number[12];
-   sprintf(number, "%d", id);
-   concat(msg, size, BECLEY, number);
+   concat(msg, size, BECLEY, "");
    mandar(msg, size, sock, addr);
 }
+
+void sendTime(int id, int time, int sock, struct sockaddr_in addr)
+{
+   int size = sizeof(TIME) + sizeof(id) + sizeof(char) + sizeof(time);
+   char msg[size];
+   char msg1[size];
+   char msg2[size];
+   char numberId[12];
+   char numberTime[12];
+   sprintf(numberId, "%d", id);
+   sprintf(numberTime, "%d", time);
+   concat(msg1, size, TIME, numberId);
+   concat(msg2, size, ",", numberTime);
+   concat(msg, size, msg1, msg2);
+   mandar(msg, size, sock, addr);
+}
+
+void sendNewTime(int id, int time, int sock, struct sockaddr_in addr)
+{
+   int size = sizeof(NEW_TIME) + sizeof(id) + sizeof(char) + sizeof(time);
+   char msg[size];
+   char msg1[size];
+   char msg2[size];
+   char numberId[12];
+   char numberTime[12];
+   sprintf(numberId, "%d", id);
+   sprintf(numberTime, "%d", time);
+   concat(msg1, size, NEW_TIME, numberId);
+   concat(msg2, size, ",", numberTime);
+   concat(msg, size, msg1, msg2);
+   mandar(msg, size, sock, addr);
+}
+
+void sendEnd(int sock, struct sockaddr_in addr)
+{
+   int size = sizeof(END);
+   char msg[size];
+   concat(msg, size, END, "");
+   mandar(msg, size, sock, addr);
+}
+
+int nextNumber(char* msg)
+{
+   int i = 0;
+   while( msg[i] != '\n'){
+      if(msg[i] == ','){
+         return i+1;
+      }
+      ++i;
+   }
+   return -1; // NUNCA VAI ACONTECER.
+}
+

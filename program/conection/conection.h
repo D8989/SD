@@ -14,6 +14,8 @@
 #define APRESENTACAO "A"
 #define BULLY "B"
 #define BECLEY "C"
+#define TIME "T"
+#define NEW_TIME "N"
 #define LIDER "L"
 #define OK "K"
 #define END "E"
@@ -29,6 +31,11 @@ void closeSocket(int *sock);
 void sendApresentacao(int id, int sock, struct sockaddr_in addr);
 void sendEleicao(int id, int sock, struct sockaddr_in addr);
 void sendLider(int id, int sock, struct sockaddr_in addr);
-void sendBerkley(int id, int sock, struct sockaddr_in addr);
+void sendBerkley(int sock, struct sockaddr_in addr);
+void sendTime(int id, int time, int sock, struct sockaddr_in addr);
+void sendNewTime(int id, int time, int sock, struct sockaddr_in addr);
+void sendEnd(int sock, struct sockaddr_in addr);
+
+int nextNumber(char* msg); // retorna a posicao do segundo numero da mensagem TIME
 
 #endif

@@ -13,7 +13,7 @@ void printAllProcess(int id, process_t *p){
     int i;
     for(i = 0; i < MAX_PROCESS; ++i){
         if(p->process[i] != 0){
-            printf("%d ", p->process[i]);
+            printf("%d[%d] ", p->process[i], p->time[i]);
         }
     }
     printf("\n");
@@ -28,4 +28,31 @@ int haveProcess(int a, process_t* p)
         }
     }
     return 0;
+}
+
+void addTime(int id, int time, process_t* p)
+{
+    int i = 0;
+    int j;
+    while( i < MAX_PROCESS && p->process[i] != id){
+        ++i;
+    }
+    
+    if( i == MAX_PROCESS){ 
+        p->myTime = time;    
+    }
+    else{
+        p->time[i] = time;
+    }   
+}
+
+double mediaTempo(process_t* p)
+{
+    int i;
+    double sum = 0;
+    for(i = 0; i < MAX_PROCESS; ++i){
+        sum += p->time[i];
+    }
+    sum += p->myTime;
+    return sum/(p->i+1);
 }
