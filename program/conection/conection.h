@@ -15,6 +15,7 @@
 #define BULLY "B"
 #define BECLEY "C"
 #define OK "K"
+#define END "E"
 
 
 void mandar(const char *msg, unsigned long size, int sock, struct sockaddr_in addr);

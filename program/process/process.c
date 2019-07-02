@@ -18,3 +18,14 @@ void printAllProcess(int id, process_t *p){
     }
     printf("\n");
 }
+
+int haveProcess(int a, process_t* p)
+{
+    int i;
+    for(i = 0; i < MAX_PROCESS; ++i){
+        if(p->process[i] == a){
+            return 1;
+        }
+    }
+    return 0;
+}

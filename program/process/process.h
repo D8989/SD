@@ -10,4 +10,5 @@ typedef struct {
 
 void addProcess(int a, process_t* p);
 void printAllProcess(int id, process_t *p);
+int haveProcess(int a, process_t* p);
 #endif

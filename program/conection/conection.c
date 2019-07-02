@@ -83,7 +83,6 @@ void configureToListen(int sock, struct sockaddr_in *addr, struct ip_mreqn *mreq
 
    if (bind(sock, (struct sockaddr *)addr, sizeof(*addr)) < 0)
    {
-      printf("TESTE2");
       perror("bind");
       exit(1);
    }

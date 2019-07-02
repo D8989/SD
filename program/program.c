@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
     int timeLocal = atoi(argv[2]);
     int id = atoi(argv[1]);
     int running = 1;
+    int welcome = 1;
     char arqPath[MAX_NAME_SIZE] = "saida/processo_";
     strcat(arqPath, argv[1]);
     strcat(arqPath, ".txt");
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
     char msgAux[MAX_MSG_SIZE];
     pthread_t thread;
     process_t process;
-    bzero((char*)&process, sizeof(process));
+    bzero((char *)&process, sizeof(process));
 
     setTime(timeLocal);
     pthread_create(&thread, NULL, incrementTime, NULL); // inicio da conta do tempo
@@ -68,36 +69,50 @@ int main(int argc, char *argv[])
 
     sock = startSocket();
     initSocketAddr(&addr, EXAMPLE_PORT);
-
     configureToSend(&addr, EXAMPLE_GROUP);
-    sendApresentacao(id, sock, addr);
-
-    printf("mensagem de apresentacao enviada\n");
+    configureToListen(sock, &addr, &mreq, EXAMPLE_GROUP);
 
     while (running)
     {
-        closeSocket(&sock);
-        sock = startSocket();
-        initSocketAddr(&addr, EXAMPLE_PORT);
+        printf("\t\tWelcome = %d\n", welcome);
+        if (welcome)
+        {
+            configureToSend(&addr, EXAMPLE_GROUP);
+            sendApresentacao(id, sock, addr);
+            printf("mensagem de apresentacao enviada\n");
+        }
+
         printf("escutando...\n");
-        configureToListen(sock, &addr, &mreq, EXAMPLE_GROUP);
         escutar(sock, &addr, msgAux, MAX_MSG_SIZE);
         char aux[2] = {msgAux[0]};
-        printf("msgAux=%s\n", msgAux);
-        printf("aux=%s\n", aux);
         if (strcmp(APRESENTACAO, aux) == 0)
         {
-            printf("ENTROU NA APRESENTACAO.");
-            printf("%s\n", msgAux);
+            printf("\tENTROU NA APRESENTACAO.\n");
+            printf("msgAux=%s\n", msgAux);
             int a = atoi(&msgAux[1]);
             printf("a=%d\n", a);
-            addProcess(a, &process);
+            if (a != id && !haveProcess(a, &process)) // processo não está na lista.
+            {
+                addProcess(a, &process);
+                welcome = 1;
+            }
+            else
+            {
+                welcome = 0;
+            }
+
             bzero(msgAux, sizeof(msgAux));
+            printAllProcess(id, &process);
         }
-        else
+        else if (strcmp(END, aux) == 0)
         {
             printf("MENSAGEM <%s> INVALIDA.\n", msgAux);
             running = 0;
+        }
+        else
+        {
+            printf("tempo estourado. escutando novamente.\n");
+            printAllProcess(id, &process);
         }
     }
 
