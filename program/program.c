@@ -33,8 +33,9 @@ just one host and as a receiver on all the other hosts
 #define MAX_NAME_SIZE 50
 
 int time_global = 0;
-int stop = 1; // tempo que o relogio vai para
+int stop = 1;     // tempo que o relogio vai para
 int boolStop = 0; // bool para controlar o atraso do tempo
+int boolRunThread = 1; // bool que controla a saida da thread 
 
 void setTime(int n);
 int getTime();
@@ -287,7 +288,7 @@ int main(int argc, char *argv[])
                 int p_time = atoi(&msgAux[i]);
                 printf("p_id=%d; p_time=%d\n", p_id, p_time);
                 addTime(p_id, p_time, &process);
-                concat(message, MAX_MSG_SIZE, "Tempo recebidd: ", msgAux);
+                concat(message, MAX_MSG_SIZE, "Tempo recebido: ", msgAux);
                 escrever(arqPath, id, getTime(), message);
                 bzero(message, MAX_MSG_SIZE);
                 ++count;
@@ -350,8 +351,14 @@ int main(int argc, char *argv[])
         bzero(msgAux, sizeof(msgAux)); // apaga a mensagem
     }
 
+    concat(message, MAX_MSG_SIZE, "FIM do algoritmo.", "");
+    escrever(arqPath, id, getTime(), message);
+    bzero(message, MAX_MSG_SIZE);
+
     closeSocket(&sock);
-    setTime(9999999);
+    //setTime(9999999);
+    boolRunThread = 0;
+    printf("FIM.\n");
     pthread_exit(NULL);
     return 0;
 }
@@ -359,13 +366,17 @@ int main(int argc, char *argv[])
 void setTime(int n)
 {
     int atual = getTime();
-    if( n >= atual){
+    if (n >= atual)
+    {
         time_global = n;
-    } 
-    else {
-        if( n < 0) n *= -1;
+    }
+    else
+    {
+        if (n < 0)
+            n *= -1;
         stop = n;
         boolStop = 1;
+        printf("\tRelogio irá pausar por %d segundos.\n", n);
     }
 }
 
@@ -377,15 +388,18 @@ int getTime()
 
 void *incrementTime(void *v)
 {
-    while (time_global < 9999999)
+    while (boolRunThread)
     {
         time_global = time_global + 1;
-        if( boolStop ){
+        if (boolStop)
+        {
             sleep(stop);
             boolStop = 0;
         }
-        else {
+        else
+        {
             sleep(1);
         }
+        
     }
 }
