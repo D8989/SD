@@ -1,13 +1,7 @@
 /* 
-
-multicast.c
-
-The following program sends or receives multicast packets. If invoked
-with one argument, it sends a packet containing the current time to an
-arbitrarily chosen multicast group and UDP port. If invoked with no
-arguments, it receives and prints these packets. Start it as a sender on
-just one host and as a receiver on all the other hosts
-
+Trabalho de SD
+Daniel Juventude Moreira
+05/07/2019
 */
 
 #include <sys/types.h>
@@ -33,9 +27,9 @@ just one host and as a receiver on all the other hosts
 #define MAX_NAME_SIZE 50
 
 int time_global = 0;
-int stop = 1;     // tempo que o relogio vai para
-int boolStop = 0; // bool para controlar o atraso do tempo
-int boolRunThread = 1; // bool que controla a saida da thread 
+int stop = 1;          // tempo que o relogio vai para
+int boolStop = 0;      // bool para controlar o atraso do tempo
+int boolRunThread = 1; // bool que controla a saida da thread
 
 void setTime(int n);
 int getTime();
@@ -83,8 +77,10 @@ int main(int argc, char *argv[])
     pthread_t thread;
     process_t process;
     bzero((char *)&process, sizeof(process));
+    process.qtd = 1; // ele proprio.
 
-    setTime(timeLocal);
+    //setTime(timeLocal);
+    time_global = timeLocal;
     pthread_create(&thread, NULL, incrementTime, NULL); // inicio da conta do tempo
     struct sockaddr_in addr;
     bzero((char *)&addr, sizeof(addr));
@@ -167,19 +163,12 @@ int main(int argc, char *argv[])
         if (newTime)
         {
             int i = 0;
-            double newT; // novo tempo;
+            double newT = 0; // novo tempo;
             while (i < process.i)
             {
 
-                newT = 0;
-                if (media >= process.time[i])
-                {
-                    newT = media + abs(process.time[i]);
-                }
-                else
-                {
-                    newT = media - abs(process.time[i]);
-                }
+                newT = media;
+                //newT = abs(media - process.time[i]);
                 configureToSend(&addr, EXAMPLE_GROUP); // não entendo a nescessidade desta linha...
                 sendNewTime(process.process[i], newT, sock, addr, message);
                 concat(msgAux, MAX_MSG_SIZE, "Novo tempo enviado: ", message);
@@ -187,15 +176,8 @@ int main(int argc, char *argv[])
                 bzero(message, MAX_MSG_SIZE);
                 ++i;
             }
-            newT = 0;
-            if (media >= process.myTime)
-            {
-                newT = media + abs(process.myTime);
-            }
-            else
-            {
-                newT = media - abs(process.myTime);
-            }
+            newT = media;
+
             configureToSend(&addr, EXAMPLE_GROUP); // não entendo a nescessidade desta linha...
             sendNewTime(id, newT, sock, addr, message);
             concat(msgAux, MAX_MSG_SIZE, "Novo tempo enviada: ", message);
@@ -295,21 +277,21 @@ int main(int argc, char *argv[])
                 if (process.i + 1 == count) // já leu o tempo de todos os processos
                 {
                     media = mediaTempo(&process);
-                    printf("media = %lf\n", media);
-                    newTime = 1; // seta para mandar as mensagens de uodate de tempo.
+                    //printf("media = %lf\n", media);
+                    newTime = 1; // seta para mandar as mensagens de update de tempo.
                 }
             }
         }
 
         else if (strcmp(NEW_TIME, aux) == 0)
         {
-            printf("\tENTROU NO UPDATE DO TEMPO.\n");
             int p_id = atoi(&msgAux[1]);
             int i = nextNumber(msgAux);
             int p_time = atoi(&msgAux[i]);
             printf("p_id=%d; p_time=%d\n", p_id, p_time);
             if (p_id == id)
             {
+                printf("\tENTROU NO UPDATE DO TEMPO.\n");
                 concat(message, MAX_MSG_SIZE, "Novo Tempo recebido: ", msgAux);
                 escrever(arqPath, id, getTime(), message);
                 bzero(message, MAX_MSG_SIZE);
@@ -356,27 +338,24 @@ int main(int argc, char *argv[])
     bzero(message, MAX_MSG_SIZE);
 
     closeSocket(&sock);
-    //setTime(9999999);
     boolRunThread = 0;
     printf("FIM.\n");
-    pthread_exit(NULL);
     return 0;
 }
 
-void setTime(int n)
+void setTime(int new_time)
 {
-    int atual = getTime();
-    if (n >= atual)
+    int time_atual = getTime();
+    if (new_time >= time_atual)
     {
-        time_global = n;
+        time_global =new_time;
     }
     else
     {
-        if (n < 0)
-            n *= -1;
-        stop = n;
-        boolStop = 1;
-        printf("\tRelogio irá pausar por %d segundos.\n", n);
+        int sleep_time = new_time - time_atual;
+        stop = sleep_time; // variavel global
+        boolStop = 1; // ativa a parada do relogio
+        printf("\tRelogio irá pausar por %d segundos.\n", sleep_time);
     }
 }
 
@@ -386,6 +365,7 @@ int getTime()
     return n;
 }
 
+// Funcao rodando em thread
 void *incrementTime(void *v)
 {
     while (boolRunThread)
@@ -400,6 +380,5 @@ void *incrementTime(void *v)
         {
             sleep(1);
         }
-        
     }
 }

@@ -6,6 +6,7 @@ void addProcess(int a, process_t *p)
 {
     p->process[p->i] = a;
     p->i += 1;
+    p->qtd += 1;
 }
 
 void printAllProcess(int id, process_t *p){
@@ -46,13 +47,13 @@ void addTime(int id, int time, process_t* p)
     }   
 }
 
-double mediaTempo(process_t* p)
+int mediaTempo(process_t* p)
 {
     int i;
-    double sum = 0;
+    int sum = 0;
     for(i = 0; i < MAX_PROCESS; ++i){
         sum += p->time[i];
     }
     sum += p->myTime;
-    return sum/(p->i+1);
+    return sum/p->qtd;
 }
